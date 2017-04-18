@@ -1,10 +1,11 @@
 include("variance.jl")
+include("precompute.jl")
 import ImageFilters
 
-function getamean(variancenorm::Array{Float64,3}, covariance::Array{Float64,3},
+function getamean(variancenorm::Array{Float32,3}, covariance::Array{Float32,3},
     boxradius::Int64)
   channels, imagewidth, imageheight = size(covariance)
-  amean = Array{Float64}(3, imagewidth, imageheight)
+  amean = Array{Float32}(3, imagewidth, imageheight)
   for pixely in 1:imageheight
     for pixelx  in 1:imagewidth
       @inbounds redcov = covariance[1, pixelx, pixely]
@@ -24,8 +25,8 @@ function getamean(variancenorm::Array{Float64,3}, covariance::Array{Float64,3},
   return amean
 end
 
-function computemeandiff!(amean::Array{Float64,3}, bmean::Array{Float64,2},
-    guidancemean::Array{Float64,3})
+function computemeandiff!(amean::Array{Float32,3}, bmean::Array{Float32,2},
+    guidancemean::Array{Float32,3})
   channels, imagewidth, imageheight = size(guidancemean)
   for pixely in 1:imageheight
     for pixelx in 1:imagewidth
@@ -37,10 +38,10 @@ function computemeandiff!(amean::Array{Float64,3}, bmean::Array{Float64,2},
   end
 end
 
-function getfilteredimage(amean::Array{Float64,3}, bmean::Array{Float64,2},
-    guidanceimage::Array{Float64,3}, boxradius::Int64)
+function getfilteredimage(amean::Array{Float32,3}, bmean::Array{Float32,2},
+    guidanceimage::Array{Float32,3}, boxradius::Int64)
   channels, imagewidth, imageheight = size(guidanceimage)
-  filteredimage = Array{Float64}(imagewidth, imageheight)
+  filteredimage = Array{Float32}(imagewidth, imageheight)
 
   for pixely in 1:imageheight
     for pixelx in 1:imagewidth
@@ -53,29 +54,31 @@ function getfilteredimage(amean::Array{Float64,3}, bmean::Array{Float64,2},
   return filteredimage
 end
 
-function getguidedfilter(guidanceimage::Array{Float64,3},
-    guidancemean::Array{Float64,3}, variancenorm::Array{Float64,3},
-    targetimage::Array{Float64,2}, boxradius::Int64, epsilon::Float64)
-  targetmean = ImageFilters.boxfilter(targetimage, boxradius)
+function getguidedfilter(guidanceimage::Array{Float32,3},
+    guidancemean::Array{Float32,3}, variancenorm::Array{Float32,3},
+    targetimage::Array{Float32,2}, boxradius::Int64, epsilon::Float32)
+  targetmean = ImageFilters.boxfilter(targetimage, (boxradius, boxradius))
   covariance = getcovariance(guidanceimage, targetimage, guidancemean,
     targetmean, boxradius)
   amean = getamean(variancenorm, covariance, boxradius)
   bmean = targetmean
   computemeandiff!(amean, bmean, guidancemean)
-  amean = ImageFilters.boxfilter(amean, boxradius)
-  bmean = ImageFilters.boxfilter(bmean, boxradius)
+  amean = ImageFilters.boxfilter(amean, (boxradius, boxradius))
+  bmean = ImageFilters.boxfilter(bmean, (boxradius, boxradius))
   return getfilteredimage(amean, bmean, guidanceimage, boxradius)
 end
 
-function getguidedfilter(guidanceimage::Array{Float64, 3},
-    targetimage::Array{Float64, 2}, boxradius::Int64, epsilon::Float64)
+function getguidedfilter(guidanceimage::Array{Float32, 3},
+    targetimage::Array{Float32, 2}, boxradius::Int64, epsilon::Float32)
+
   guidancemean, variancenorm = initiatefilter(guidanceimage, boxradius, epsilon)
+  targetmean = ImageFilters.boxfilter(targetimage, (boxradius, boxradius))
   covariance = getcovariance(guidanceimage, targetimage, guidancemean,
     targetmean, boxradius)
   amean = getamean(variancenorm, covariance, boxradius)
   bmean = targetmean
   computemeandiff!(amean, bmean, guidancemean)
-  amean = ImageFilters.boxfilter(amean, boxradius)
-  bmean = ImageFilters.boxfilter(bmean, boxradius)
+  amean = ImageFilters.boxfilter(amean, (boxradius, boxradius))
+  bmean = ImageFilters.boxfilter(bmean, (boxradius, boxradius))
   return getfilteredimage(amean, bmean, guidanceimage, boxradius)
 end

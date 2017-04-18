@@ -1,11 +1,11 @@
 import ImageFilters
 include("matrixutils.jl")
 
-function getvariance(guidanceimage::Array{Float64,3},
-    guidancemean::Array{Float64,3}, boxradius::Int64)
+function getvariance(guidanceimage::Array{Float32,3},
+    guidancemean::Array{Float32,3}, boxradius::Int64)
   channels, imagewidth, imageheight = size(guidanceimage)
-  greenbluevariance = Array{Float64}(3, imagewidth, imageheight)
-  redvariance = Array{Float64}(3, imagewidth, imageheight)
+  greenbluevariance = Array{Float32}(3, imagewidth, imageheight)
+  redvariance = Array{Float32}(3, imagewidth, imageheight)
   for pixely in 1:imageheight
     for pixelx in 1:imagewidth
       redvariance[1, pixelx, pixely] = (guidanceimage[1, pixelx, pixely] *
@@ -22,8 +22,9 @@ function getvariance(guidanceimage::Array{Float64,3},
         guidanceimage[3, pixelx, pixely])
     end
   end
-  redvariance = ImageFilters.boxfilter(redvariance, boxradius)
-  greenbluevariance = ImageFilters.boxfilter(greenbluevariance, boxradius)
+  redvariance = ImageFilters.boxfilter(redvariance, (boxradius, boxradius))
+  greenbluevariance = ImageFilters.boxfilter(greenbluevariance, (boxradius,
+    boxradius))
 
   for pixely in 1:imageheight
     for pixelx in 1:imagewidth
@@ -44,12 +45,12 @@ function getvariance(guidanceimage::Array{Float64,3},
   return redvariance, greenbluevariance
 end
 
-function getvariancenorm(redvariance::Array{Float64,3},
-    greenbluevariance::Array{Float64,3} ,epsilon::Float64)
+function getvariancenorm(redvariance::Array{Float32,3},
+    greenbluevariance::Array{Float32,3} ,epsilon::Float32)
   channels, imagewidth, imageheight = size(redvariance)
-  variancenorm = Array{Float64}(6, imagewidth, imageheight)
-  sigma = Array{Float64}(3,3)
-  invsigma = Array{Float64}(3,3)
+  variancenorm = Array{Float32}(6, imagewidth, imageheight)
+  sigma = Array{Float32}(3,3)
+  invsigma = Array{Float32}(3,3)
   for pixely in 1:imageheight
     for pixelx in 1:imagewidth
       @inbounds sigma[1,1] = redvariance[1, pixelx, pixely] + epsilon
@@ -75,9 +76,9 @@ function getvariancenorm(redvariance::Array{Float64,3},
   return variancenorm
 end
 
-function initiatefilter(guidanceimage::Array{Float64,3},
-    boxradius::Int64, epsilon::Float64)
-  guidancemean = ImageFilters.boxfilter(guidanceimage, boxradius)
+function initiatefilter(guidanceimage::Array{Float32,3},
+    boxradius::Int64, epsilon::Float32)
+  guidancemean = ImageFilters.boxfilter(guidanceimage, (boxradius,boxradius))
   redvariance, greenbluevariance = getvariance(guidanceimage, guidancemean,
     boxradius)
   variancenorm = getvariancenorm(redvariance, greenbluevariance, epsilon)

@@ -1,12 +1,12 @@
 import ImageFilters
 
-function getcovariance(guidanceimage::Array{Float64,3},
-    targetimage::Array{Float64,2}, guidancemean::Array{Float64,3},
-    targetmean::Array{Float64,2}, boxradius::Int64)
+function getcovariance(guidanceimage::Array{Float32,3},
+    targetimage::Array{Float32,2}, guidancemean::Array{Float32,3},
+    targetmean::Array{Float32,2}, boxradius::Int64)
   channels, imagewidth, imageheight = size(guidancemean)
-  covariance = Array{Float64}(channels, imagewidth, imageheight)
+  covariance = Array{Float32}(channels, imagewidth, imageheight)
 
-  productimage = Array{Float64}(channels, imagewidth, imageheight)
+  productimage = Array{Float32}(channels, imagewidth, imageheight)
   for pixely in 1:imageheight
     for  pixelx in 1:imagewidth
       @inbounds productimage[1, pixelx, pixely] = (guidanceimage[1, pixelx,
@@ -17,7 +17,7 @@ function getcovariance(guidanceimage::Array{Float64,3},
         pixely] * targetimage[pixelx, pixely])
     end
   end
-  productimage = ImageFilters.boxfilter(productimage, boxradius)
+  productimage = ImageFilters.boxfilter(productimage, (boxradius, boxradius))
 
   for pixely in 1:imageheight
     for pixelx in 1:imagewidth

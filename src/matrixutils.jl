@@ -1,5 +1,5 @@
-function getmatrixinverse!(matrix::Array{Float64,2},
-    inversematrix::Array{Float64,2})
+function getmatrixinverse!(matrix::Array{Float32,2},
+    inversematrix::Array{Float32,2})
   @inbounds a11 = ((matrix[3,3]*matrix[2,2]) - (matrix[2,3]*matrix[2,3]))
   @inbounds a12 = ((matrix[1,3]*matrix[2,3]) - (matrix[3,3]*matrix[1,2]))
   @inbounds a13 = ((matrix[1,2]*matrix[2,3]) - (matrix[1,3]*matrix[2,2]))
